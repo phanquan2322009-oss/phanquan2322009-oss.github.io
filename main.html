@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="main.css">
+  <title>SafeRoute</title>
+</head>
+<body>
+  <!-- ====================== SIDEBAR ====================== -->
+  <aside class="sidebar offcanvas-lg offcanvas-start d-flex flex-column" tabindex="-1" id="sidebar" aria-label="Menu chính">
+    <div class="offcanvas-header d-lg-none">
+      <span class="fw-semibold">Menu</span>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Đóng"></button>
+    </div>
+
+    <div class="offcanvas-body d-flex flex-column p-0 h-100">
+      <div class="px-3 pt-lg-4 pb-3">
+        <a href="#" class="brand">
+          <span class="brand-icon"><i class="bi bi-geo-alt-fill"></i></span>
+          <span>
+            <span class="brand-name d-block">SafeRoute</span>
+            <span class="brand-tagline d-block">Bản đồ thông minh - Đi chuyển an toàn</span>
+          </span>
+        </a>
+      </div>
+
+      <nav class="px-3 mt-2">
+        <ul class="nav flex-column gap-1">
+          <li class="nav-item"><a class="nav-link active" href="#"><i class="bi bi-house-door-fill"></i> Trang chủ</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-map"></i> Bản đồ</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-clipboard2-pulse"></i> Báo cáo điểm ngập</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-people"></i> Cộng đồng</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-bar-chart-line"></i> Thống kê</a></li>
+          <li class="nav-item"><a class="nav-link" href="#"><i class="bi bi-question-circle"></i> Giới thiệu</a></li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer mt-auto">
+        <svg viewBox="0 0 180 110" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <ellipse cx="90" cy="98" rx="86" ry="10" fill="#cfe8de"/>
+          <rect x="22" y="40" width="26" height="58" rx="3" fill="#9fd3c0"/>
+          <rect x="52" y="22" width="30" height="76" rx="3" fill="#6fbfa3"/>
+          <rect x="86" y="48" width="24" height="50" rx="3" fill="#b7ddcf"/>
+          <rect x="114" y="32" width="28" height="66" rx="3" fill="#86c8b0"/>
+          <g fill="#fff" opacity=".8">
+            <rect x="57" y="30" width="5" height="5"/><rect x="66" y="30" width="5" height="5"/>
+            <rect x="57" y="42" width="5" height="5"/><rect x="66" y="42" width="5" height="5"/>
+            <rect x="57" y="54" width="5" height="5"/><rect x="66" y="54" width="5" height="5"/>
+            <rect x="119" y="40" width="5" height="5"/><rect x="128" y="40" width="5" height="5"/>
+            <rect x="119" y="52" width="5" height="5"/><rect x="128" y="52" width="5" height="5"/>
+          </g>
+          <circle cx="34" cy="86" r="11" fill="#2f9e75"/>
+          <rect x="32.5" y="90" width="3" height="10" fill="#7a5c3e"/>
+          <circle cx="150" cy="84" r="13" fill="#2f9e75"/>
+          <rect x="148.5" y="90" width="3" height="10" fill="#7a5c3e"/>
+        </svg>
+        <div class="title">Thành phố xanh</div>
+        <div class="sub">Bắt đầu từ những hành động nhỏ <i class="bi bi-leaf"></i></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ====================== PAGE ====================== -->
+  <div class="page-wrapper">
+
+    <header class="topbar d-flex align-items-center gap-2 gap-lg-3">
+      <button class="btn btn-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Mở menu">
+        <i class="bi bi-list fs-5"></i>
+      </button>
+
+      <!-- Ô tìm đường -->
+      <form class="route-box flex-wrap flex-md-nowrap" onsubmit="return false;">
+        <label class="route-field">
+          <i class="bi bi-geo-alt-fill pin-from"></i>
+          <span class="flex-grow-1 min-w-0">
+            <span class="label">Đi từ</span>
+            <input type="text" id="fromInput" value="Cầu Rồng, Đà Nẵng" placeholder="Nhập điểm xuất phát">
+          </span>
+          <button type="button" class="clear" aria-label="Xóa điểm đi" data-clear="fromInput"><i class="bi bi-x"></i></button>
+        </label>
+
+        <button type="button" class="btn-swap" id="swapBtn" aria-label="Đổi chiều"><i class="bi bi-arrow-left-right"></i></button>
+
+        <label class="route-field">
+          <i class="bi bi-geo-alt-fill pin-to"></i>
+          <span class="flex-grow-1 min-w-0">
+            <span class="label">Đến</span>
+            <input type="text" id="toInput" value="Bảo tàng Chăm, Đà Nẵng" placeholder="Nhập điểm đến">
+          </span>
+          <button type="button" class="clear" aria-label="Xóa điểm đến" data-clear="toInput"><i class="bi bi-x"></i></button>
+        </label>
+
+        <button type="submit" class="btn-sr">
+          <i class="bi bi-search me-1"></i> Tìm đường
+        </button>
+      </form>
+
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <button class="btn-bell" type="button" aria-label="Thông báo">
+          <i class="bi bi-bell"></i>
+          <span class="badge-dot">3</span>
+        </button>
+
+        <div class="dropdown">
+          <button class="user-menu dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <img src="https://i.pravatar.cc/72?img=12" alt="Ảnh đại diện">
+            <span class="d-none d-md-inline fw-medium">Người dùng</span>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#">Hồ sơ</a></li>
+            <li><a class="dropdown-item" href="#">Cài đặt</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#">Đăng xuất</a></li>
+          </ul>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content">
+      <div class="row g-2 mb-2">
+        <div class="col-12 col-sm-4">
+          <div class="stat-card">
+            <div class="stat-icon flood"><i class="bi bi-droplet-fill"></i></div>
+            <div>
+              <div class="stat-label">Điểm ngập đang ghi nhận</div>
+              <div class="stat-value" id="floodCount">12</div>
+              <div class="stat-note up"><i class="bi bi-caret-up-fill"></i> 3 so với hôm qua</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-4">
+          <div class="stat-card">
+            <div class="stat-icon rain"><i class="bi bi-cloud-rain-fill"></i></div>
+            <div>
+              <div class="stat-label">Tổng lượng mưa (24h)</div>
+              <div class="stat-value"><span id="rainValue">78</span> <small>mm</small></div>
+              <div class="stat-note up"><i class="bi bi-caret-up-fill"></i> 12% so với trung bình</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-4">
+          <div class="stat-card">
+            <div class="stat-icon aqi"><i class="bi bi-leaf-fill"></i></div>
+            <div>
+              <div class="stat-label">Chỉ số không khí (AQI)</div>
+              <div class="stat-value" id="aqiValue">42</div>
+              <div class="stat-note good"><i class="bi bi-circle-fill" style="font-size:.5rem"></i> Tốt</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="map" style="width:100%; height:960px; border-radius:12px; overflow:hidden; position:relative; z-index:0;"></div>
+    </main>
+
+  </div>
+
+  <!-- ====================== SCRIPTS ====================== -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ================= Đổi chiều / xóa ô nhập =================
+    document.getElementById('swapBtn').addEventListener('click', () => {
+      const a = document.getElementById('fromInput');
+      const b = document.getElementById('toInput');
+      [a.value, b.value] = [b.value, a.value];
+    });
+
+    document.querySelectorAll('[data-clear]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.preventDefault();
+        const input = document.getElementById(btn.dataset.clear);
+        input.value = '';
+        input.focus();
+      });
+    });
+
+    // ===================== BẢN ĐỒ =====================
+    const map = L.map('map', {
+      renderer: L.canvas({ tolerance: 12 })
+    }).setView([16.0644, 108.2237], 16);
+
+    // Ảnh vệ tinh + tên đường + địa danh
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      attribution: 'Tiles &copy; Esri, Maxar, Earthstar Geographics'
+    }).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19, opacity: 0.9
+    }).addTo(map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
+    }).addTo(map);
+
+    window.addEventListener('load', () => map.invalidateSize());
+    window.addEventListener('resize', () => map.invalidateSize());
+    document.getElementById('sidebar').addEventListener('hidden.bs.offcanvas', () => map.invalidateSize());
+
+    // ============ Điểm ngập mẫu (tọa độ ví dụ ở Đà Nẵng) ============
+    const floodPoints = [
+      { lat: 16.0610, lng: 108.2210, name: 'Ngập 30cm' },
+      { lat: 16.0660, lng: 108.2250, name: 'Ngập 15cm' }
+    ];
+    floodPoints.forEach(p => {
+      L.circleMarker([p.lat, p.lng], {
+        radius: 10, color: '#fff', weight: 2, fillColor: '#dc3545', fillOpacity: 0.85
+      }).addTo(map).bindPopup(p.name);
+    });
+
+    // ============ Đánh dấu đoạn ngập: bấm điểm đầu + điểm cuối, tự nối ============
+    const reportLayer  = L.layerGroup().addTo(map);
+    const blockedRoads = new Map();         // id -> [mảng tọa độ [lat,lng] của đoạn bị chặn]
+    let reportCount = 0, segId = 0;
+    let lastEndpoints = null;               // nhớ điểm đi/đến để tính lại khi chặn đường
+    let markMode = false, pendingPoint = null, pendingMarker = null;
+
+    // Dòng hướng dẫn (góc trái dưới)
+    const status = L.control({ position: 'bottomleft' });
+    status.onAdd = () => {
+      const d = L.DomUtil.create('div');
+      d.style.cssText = 'background:#fff;padding:4px 10px;border-radius:8px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,.3);max-width:340px';
+      d.id = 'roadStatus';
+      return d;
+    };
+    status.addTo(map);
+    const setStatus = t => document.getElementById('roadStatus').textContent = t;
+
+    // Hộp thông tin tuyến (góc phải trên)
+    const routeInfoCtl = L.control({ position: 'topright' });
+    routeInfoCtl.onAdd = () => {
+      const d = L.DomUtil.create('div');
+      d.id = 'routeInfo';
+      d.style.cssText = 'display:none;background:#fff;padding:6px 12px;border-radius:8px;font-size:12px;box-shadow:0 1px 4px rgba(0,0,0,.3);max-width:230px';
+      return d;
+    };
+    routeInfoCtl.addTo(map);
+    function showInfo(html) {
+      const d = document.getElementById('routeInfo');
+      d.innerHTML = html;
+      d.style.display = html ? 'block' : 'none';
+    }
+
+    // Nút bật/tắt chế độ đánh dấu (dưới nút zoom)
+    const markCtl = L.control({ position: 'topleft' });
+    markCtl.onAdd = () => {
+      const d = L.DomUtil.create('div');
+      d.innerHTML = '<button type="button" id="markBtn" class="btn btn-sm btn-light shadow-sm mt-2"></button>';
+      L.DomEvent.disableClickPropagation(d);
+      return d;
+    };
+    markCtl.addTo(map);
+
+    const IDLE_HINT = 'Bấm "Đánh dấu đoạn ngập", rồi chọn điểm đầu và điểm cuối của đoạn ngập';
+
+    function setMarkMode(on) {
+      markMode = on;
+      const btn = document.getElementById('markBtn');
+      btn.className = 'btn btn-sm shadow-sm mt-2 ' + (on ? 'btn-danger' : 'btn-light');
+      btn.innerHTML = on
+        ? '<i class="bi bi-x-lg"></i> Hủy'
+        : '<i class="bi bi-droplet-fill text-danger"></i> Đánh dấu đoạn ngập';
+      map.getContainer().style.cursor = on ? 'crosshair' : '';
+      if (pendingMarker) reportLayer.removeLayer(pendingMarker);
+      pendingPoint = null;
+      pendingMarker = null;
+      setStatus(on ? 'Bấm vào ĐIỂM ĐẦU của đoạn ngập (Esc để hủy)' : IDLE_HINT);
+    }
+    document.getElementById('markBtn').addEventListener('click', () => setMarkMode(!markMode));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && markMode) setMarkMode(false); });
+    setMarkMode(false);
+
+    // Thêm một đoạn bị chặn từ kết quả OSRM
+    function addBlockedSegment(r) {
+      const id = ++segId;
+      const latlngs = r.geometry.coordinates.map(c => [c[1], c[0]]);
+      blockedRoads.set(id, [latlngs]);
+
+      const group = L.featureGroup();
+      const line = L.polyline(latlngs, { color: '#ff3b3b', weight: 8, opacity: 0.95 }).addTo(group);
+      [latlngs[0], latlngs[latlngs.length - 1]].forEach(p =>
+        L.circleMarker(p, { radius: 7, color: '#fff', weight: 2, fillColor: '#ff3b3b', fillOpacity: 1 }).addTo(group)
+      );
+
+      const box = document.createElement('div');
+      box.innerHTML = `<b>Đoạn đường bị chặn (ngập)</b><br>Dài khoảng ${Math.round(r.distance)} m<br>`;
+      const btn = document.createElement('button');
+      btn.textContent = 'Mở lại đường';
+      btn.className = 'btn btn-sm btn-outline-danger mt-1';
+      btn.onclick = () => {
+        reportLayer.removeLayer(group);
+        blockedRoads.delete(id);
+        document.getElementById('floodCount').textContent = --reportCount + 12;
+        map.closePopup();
+        if (lastEndpoints) findRoute(true);
+      };
+      box.appendChild(btn);
+
+      // Đang ở chế độ đánh dấu thì bấm lên đoạn đỏ vẫn chọn được điểm
+      line.on('click', ev => {
+        if (markMode) return;
+        L.popup().setLatLng(ev.latlng).setContent(box).openOn(map);
+      });
+
+      group.addTo(reportLayer);
+      document.getElementById('floodCount').textContent = ++reportCount + 12;
+      if (lastEndpoints) findRoute(true);
+    }
+
+    map.on('click', async e => {
+      if (!markMode) return;
+
+      // Bấm lần 1: điểm đầu
+      if (!pendingPoint) {
+        pendingPoint = e.latlng;
+        pendingMarker = L.circleMarker(e.latlng, {
+          radius: 7, color: '#fff', weight: 2, fillColor: '#ff3b3b', fillOpacity: 1
+        }).addTo(reportLayer);
+        setStatus('Bấm vào ĐIỂM CUỐI của đoạn ngập (Esc để hủy)');
+        return;
+      }
+
+      // Bấm lần 2: điểm cuối -> nối 2 điểm theo đường bộ
+      const A = pendingPoint, B = e.latlng;
+      setStatus('Đang nối 2 điểm...');
+      try {
+        const routes = await osrm([{ lat: A.lat, lng: A.lng }, { lat: B.lat, lng: B.lng }], false);
+        if (!routes.length) throw new Error('Không nối được 2 điểm này bằng đường bộ');
+        const r = routes[0];
+        if (r.distance > 3000) {
+          throw new Error('Hai điểm cách nhau quá xa (' + (r.distance / 1000).toFixed(1) + ' km). Hãy chọn đoạn ngắn hơn.');
+        }
+        setMarkMode(false);          // xóa điểm đầu tạm, tắt chế độ
+        addBlockedSegment(r);
+      } catch (err) {
+        setMarkMode(false);
+        alert(err.message);
+      }
+    });
+
+    // ============ Tìm đường: Nominatim + OSRM, tự né đường bị chặn ============
+    const routeLayer = L.layerGroup().addTo(map);
+
+    // Tên địa điểm -> tọa độ
+    async function geocode(text) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=vn&q=${encodeURIComponent(text)}`;
+      const data = await (await fetch(url)).json();
+      if (!data.length) throw new Error('Không tìm thấy địa điểm: ' + text);
+      return { lat: +data[0].lat, lng: +data[0].lon };
+    }
+
+    // ---- Hình học (mét) ----
+    const toXY = (lat, lng, lat0) => [lng * 111320 * Math.cos(lat0 * Math.PI / 180), lat * 110540];
+
+    function segDist(p, a, b) {
+      const dx = b[0] - a[0], dy = b[1] - a[1];
+      const len2 = dx * dx + dy * dy;
+      let t = len2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+    }
+
+    // Chia tuyến thành các điểm cách nhau ~15m, kết quả dạng [lat, lng]
+    function densify(coords, step = 15) {
+      const out = [];
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [x1, y1] = coords[i], [x2, y2] = coords[i + 1];
+        const d = map.distance([y1, x1], [y2, x2]);
+        const n = Math.max(1, Math.ceil(d / step));
+        for (let k = 0; k < n; k++) out.push([y1 + (y2 - y1) * k / n, x1 + (x2 - x1) * k / n]);
+      }
+      const last = coords[coords.length - 1];
+      out.push([last[1], last[0]]);
+      return out;
+    }
+
+    // Kiểm tra tuyến có đi dọc đoạn bị chặn không (và đâm vào đoạn nào)
+    function analyzeRoute(coords) {
+      const pts = densify(coords, 8);
+      const entries = [...blockedRoads.entries()];
+      let hits = 0, idx = -1, seg = null;
+      if (!entries.length) return { hits, idx, seg, pts };
+
+      pts.forEach((pt, i) => {
+        const p = toXY(pt[0], pt[1], pt[0]);
+        for (const [id, ways] of entries) {
+          for (const w of ways) {
+            const first = w[0], last = w[w.length - 1];
+            // Bỏ qua sát 2 đầu đoạn, tránh nhầm với đường cắt ngang
+            if (map.distance(pt, first) < 8 || map.distance(pt, last) < 8) continue;
+            for (let j = 0; j < w.length - 1; j++) {
+              if (Math.abs(w[j][0] - pt[0]) > 0.0006 && Math.abs(w[j + 1][0] - pt[0]) > 0.0006) continue;
+              const pa = toXY(w[j][0], w[j][1], pt[0]);
+              const pb = toXY(w[j + 1][0], w[j + 1][1], pt[0]);
+              if (segDist(p, pa, pb) < 12) {
+                hits++;
+                if (idx < 0) { idx = i; seg = id; }
+                return;
+              }
+            }
+          }
+        }
+      });
+      return { hits, idx, seg, pts };
+    }
+
+    // Đếm điểm ngập mẫu nằm gần tuyến
+    function countFloods(coords) {
+      return floodPoints.filter(p =>
+        coords.some(c => map.distance([c[1], c[0]], [p.lat, p.lng]) < 40)
+      ).length;
+    }
+
+    async function osrm(points, alt) {
+      const path = points.map(p => `${p.lng},${p.lat}`).join(';');
+      const url = `https://router.project-osrm.org/route/v1/driving/${path}?overview=full&geometries=geojson&alternatives=${alt}`;
+      const data = await (await fetch(url)).json();
+      return data.code === 'Ok' ? data.routes : [];
+    }
+
+    const evalRoute = r => ({
+      r,
+      a: analyzeRoute(r.geometry.coordinates),
+      floods: countFloods(r.geometry.coordinates)
+    });
+
+    // Tạo các cặp điểm "đi song song" với đoạn bị chặn, lệch sang 2 bên
+    // (đi từ A -> via1 -> via2 -> B nên tuyến buộc phải chạy ở đường bên cạnh)
+    function detourVias(id, from, dists) {
+      const w = blockedRoads.get(id)[0];
+      let A = w[0], B = w[w.length - 1];                       // [lat, lng]
+      if (map.distance([from.lat, from.lng], A) > map.distance([from.lat, from.lng], B)) [A, B] = [B, A];
+
+      const lat0 = A[0];
+      const a = toXY(A[0], A[1], lat0), b = toXY(B[0], B[1], lat0);
+      let dx = b[0] - a[0], dy = b[1] - a[1];
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len; dy /= len;
+      const px = -dy, py = dx;                                 // vuông góc với đoạn bị chặn
+      const toLL = (x, y) => ({ lat: y / 110540, lng: x / (111320 * Math.cos(lat0 * Math.PI / 180)) });
+
+      const out = [];
+      for (const d of dists) {
+        for (const side of [1, -1]) {
+          out.push([
+            toLL(a[0] - dx * 20 + px * d * side, a[1] - dy * 20 + py * d * side),
+            toLL(b[0] + dx * 20 + px * d * side, b[1] + dy * 20 + py * d * side)
+          ]);
+        }
+      }
+      return out;
+    }
+
+    // Các điểm trung gian rải thành vòng tròn quanh đoạn bị chặn (phương án vòng rộng)
+    function ringVias(id, radii) {
+      const w = blockedRoads.get(id)[0];
+      const mid = w[Math.floor(w.length / 2)];
+      const out = [];
+      for (const r of radii) {
+        for (let k = 0; k < 8; k++) {
+          const ang = k * Math.PI / 4;
+          out.push([{
+            lat: mid[0] + (r * Math.sin(ang)) / 110540,
+            lng: mid[1] + (r * Math.cos(ang)) / (111320 * Math.cos(mid[0] * Math.PI / 180))
+          }]);
+        }
+      }
+      return out;
+    }
+
+    // Ưu tiên AN TOÀN, không quan tâm độ dài: thử mọi cách vòng cho tới khi có tuyến sạch
+    async function safeDetour(cands, from, to) {
+      const hitSegs = [...new Set(cands.filter(c => c.a.hits > 0).map(c => c.a.seg))].slice(0, 2);
+      const clean = () => cands.some(c => c.a.hits === 0);
+
+      // Gọi OSRM theo từng nhóm 4 yêu cầu để server công cộng không từ chối
+      const run = async lists => {
+        for (let i = 0; i < lists.length; i += 4) {
+          const chunk = lists.slice(i, i + 4);
+          const res = await Promise.all(
+            chunk.map(w => osrm([from, ...w, to], false).catch(() => []))
+          );
+          res.flat().forEach(r => cands.push(evalRoute(r)));
+          if (clean()) return true;
+        }
+        return false;
+      };
+
+      // 1) Đi song song với đoạn bị chặn, càng lúc càng xa
+      for (const dists of [[80, 140, 220], [320, 450, 650], [900, 1300, 1800]]) {
+        for (const id of hitSegs) {
+          if (await run(detourVias(id, from, dists))) return;
+        }
+      }
+      // 2) Vòng rộng quanh đoạn bị chặn theo 8 hướng
+      for (const id of hitSegs) {
+        if (await run(ringVias(id, [400, 800, 1500, 2500]))) return;
+      }
+    }
+
+    async function findRoute(reuse = false) {
+      const btn = document.querySelector('.btn-sr');
+      btn.disabled = true;
+
+      try {
+        if (!reuse || !lastEndpoints) {
+          const from = await geocode(document.getElementById('fromInput').value);
+          const to   = await geocode(document.getElementById('toInput').value);
+          lastEndpoints = { from, to };
+        }
+        const { from, to } = lastEndpoints;
+        showInfo('Đang tìm đường...');
+
+        let cands = (await osrm([from, to], true)).map(evalRoute);
+        if (!cands.length) throw new Error('Không tìm được đường đi');
+
+        // Tuyến nào cũng vướng đoạn bị chặn -> tìm đường vòng an toàn (không cần ngắn nhất)
+        if (!cands.some(c => c.a.hits === 0)) {
+          showInfo('Đang tìm đường vòng an toàn...');
+          await safeDetour(cands, from, to);
+        }
+
+        cands.sort((x, y) =>
+          (x.a.hits > 0) - (y.a.hits > 0) ||
+          x.floods - y.floods ||
+          x.r.distance - y.r.distance
+        );
+        const best = cands[0];
+        const blocked = best.a.hits > 0;
+
+        routeLayer.clearLayers();
+        cands.filter(c => c !== best && c.a.hits === 0).slice(0, 2).forEach(c => {
+          L.geoJSON(c.r.geometry, {
+            style: { color: '#8a9a96', weight: 5, opacity: 0.7, dashArray: '8 8' },
+            interactive: false
+          }).addTo(routeLayer);
+        });
+
+        const line = L.geoJSON(best.r.geometry, {
+          style: { color: blocked ? '#e5484d' : (best.floods ? '#fd7e14' : '#0b7a5a'), weight: 7, opacity: 0.95 },
+          interactive: false
+        }).addTo(routeLayer);
+        L.marker([from.lat, from.lng]).addTo(routeLayer);
+        L.marker([to.lat, to.lng]).addTo(routeLayer);
+
+        const km = (best.r.distance / 1000).toFixed(1);
+        const min = Math.round(best.r.duration / 60);
+        let note = '';
+        if (blocked) note = '<br><span style="color:#e5484d">Chưa tìm được tuyến nào tránh hết đoạn bị chặn, hãy cẩn thận</span>';
+        else if (blockedRoads.size) note = `<br><span style="color:#0b7a5a">Tuyến an toàn, đã tránh ${blockedRoads.size} đoạn bị chặn</span>`;
+        if (best.floods) note += `<br><span style="color:#fd7e14">Qua ${best.floods} điểm ngập</span>`;
+        showInfo(`<b>${km} km - khoảng ${min} phút</b>${note}`);
+
+        if (!reuse) map.fitBounds(line.getBounds(), { padding: [40, 40] });
+        reportLayer.eachLayer(l => l.bringToFront && l.bringToFront());
+      } catch (err) {
+        showInfo('');
+        if (reuse) console.error(err); else alert(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.querySelector('.route-box').addEventListener('submit', e => {
+      e.preventDefault();
+      findRoute(false);
+    });
+  </script>
+</body>
+</html>
